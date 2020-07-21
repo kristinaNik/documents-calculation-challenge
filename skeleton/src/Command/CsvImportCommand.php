@@ -15,27 +15,32 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 class CsvImportCommand extends Command
 {
+    /**
+     * @var string
+     */
     protected static $defaultName = 'csv:import';
-
-    const EUR = 'EUR:';
-    const USD = 'USD:';
-    const GBP = 'GBP:';
-
-
 
     /**
      * @var CalculateService
      */
     private $calculateService;
 
+    /**
+     * @var FileHandler
+     */
     private $fileHandler;
 
+    /**
+     * @var CurrencyHandler
+     */
     private $currencyHandler;
 
     /**
      * CsvImportCommand constructor.
      *
      * @param CalculateService $calculateService
+     * @param FileHandler $fileHandler
+     * @param CurrencyHandler $currencyHandler
      */
     public function __construct(CalculateService $calculateService, FileHandler $fileHandler, CurrencyHandler $currencyHandler)
     {
@@ -46,46 +51,49 @@ class CsvImportCommand extends Command
         $this->currencyHandler = $currencyHandler;
     }
 
+    /**
+     * Configure the command arguments
+     */
     protected function configure()
     {
-
         $this
-            ->setDescription('Imports a mock csv data and calculate')
-            ->addArgument('file_path',InputArgument::REQUIRED, 'path to csv file')
+            ->setDescription('Imports a mock csv data and calculates the the sum of all the documents')
+            ->addArgument('file_path',InputArgument::REQUIRED, 'path to csv file') //{src/Data/data.csv}
             ->addArgument('currencies', InputArgument::REQUIRED, 'currencies')
             ->addArgument('output_currency',InputArgument::REQUIRED, 'output currency')
-            ->addOption('vat', null, InputOption::VALUE_OPTIONAL, 'Option description')
+            ->addOption('vat', null,InputOption::VALUE_OPTIONAL, 'Option description')
         ;
     }
 
+    /**
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     *
+     * @return int
+     * @throws \Exception
+     */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
 
-
         $fileData =  $this->fileHandler->getCsvData($input->getArgument('file_path'));
         $currencyData = $this->currencyHandler->getCurrencies($input->getArgument('currencies'));
-
         $this->calculateService->setData($fileData);
         $this->calculateService->setCurrencies($currencyData);
         $totals = $this->calculateService->getTotals($input->getOptions());
 
-        $arg1 = $input->getOptions();
+        //@todo
+        $this->displayCalculatedResult($totals,$input->getArgument('output_currency'));
 
-        if ($arg1) {
-            $io->note(sprintf('You passed an argument: %s', $arg1));
-        }
-
-        if ($input->getOption('vat')) {
-
-        }
-
-        $this->displayCalculatedResult($totals,$input->getArgument('output currency'));
-        $io->success('Successfully calculated ');
+        $io->success('Successfully calculated the sum');
 
         return 0;
     }
 
+    /**
+     * @param $totals
+     * @param $outputCurrency
+     */
     private function displayCalculatedResult($totals,$outputCurrency)
     {
 

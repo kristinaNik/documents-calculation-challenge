@@ -3,6 +3,7 @@
 
 namespace App\Handlers;
 
+use App\Entity\Models\Currency;
 use App\Interfaces\CurrencyInterface;
 
 class CurrencyHandler implements CurrencyInterface
@@ -19,7 +20,7 @@ class CurrencyHandler implements CurrencyInterface
         foreach ($currencies as $currency)
         {
             $split = explode(':', $currency);
-            $data[$split[0]] = $split[1];
+            $data[] = new Currency($split[0], $split[1]);
         }
 
         return $data;
