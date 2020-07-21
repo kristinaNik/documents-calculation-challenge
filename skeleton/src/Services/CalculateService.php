@@ -9,7 +9,6 @@ use App\Services\Traits\HelperTraits;
 
 class CalculateService extends DataHandler
 {
-
     use HelperTraits;
 
     const INVOICE_TYPE = 1;
@@ -55,7 +54,7 @@ class CalculateService extends DataHandler
    public function setCurrencies($currencyData): void
    {
         foreach ($currencyData as $currency) {
-            if ($currency->getRate() === 1) {
+            if ($currency->getRate() == 1) {
                 $this->setDefaultCurrency($currency->getName());
             }
 
@@ -69,16 +68,15 @@ class CalculateService extends DataHandler
     /**
      * @return array
      */
-   public function getCalculationResult($vat, $outputCurrency): array
+   public function getTotals($vat, $outputCurrency): array
    {
        $result = [];
 
        $customers = $this->findCustomerByVat($vat);
 
        foreach ($customers as $vat => $customer) {
-           $result[$customer] = round($this->getCustomerTotal($vat, $outputCurrency));
+           $result[$customer] = round($this->getCustomerTotals($vat, $outputCurrency)) .  " " .$this->getDefaultCurrency();
        }
-
 
      return $result;
    }
@@ -88,7 +86,7 @@ class CalculateService extends DataHandler
      * @param $outputCurrency
      * @return float
      */
-   private function getCustomerTotal($vat, $outputCurrency): float
+   private function getCustomerTotals($vat, $outputCurrency): float
    {
        $total = 0;
        $invoices = [];
@@ -136,5 +134,13 @@ class CalculateService extends DataHandler
     public function setDefaultCurrency($defaultCurrency): void
     {
         $this->defaultCurrency = $defaultCurrency;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getDefaultCurrency()
+    {
+        return $this->defaultCurrency;
     }
 }

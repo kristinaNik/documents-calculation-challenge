@@ -80,7 +80,7 @@ class CsvImportCommand extends Command
         $currencyData = $this->currencyHandler->getCurrencies($input->getArgument('currencies'));
         $this->calculateService->setData($fileData);
         $this->calculateService->setCurrencies($currencyData);
-        $calculations = $this->calculateService->getCalculationResult($input->getOption('vat'), $input->getArgument('output_currency'));
+        $calculations = $this->calculateService->getTotals($input->getOption('vat'), $input->getArgument('output_currency'));
 
         $io->success($this->displayCalculatedResult($calculations));
 
@@ -96,7 +96,7 @@ class CsvImportCommand extends Command
         $output = '';
 
         foreach ($calculations as $customer => $total) {
-            $output =  sprintf('%s - %d', $customer, $total);
+            $output =  sprintf('%s - %s', $customer, $total);
         }
 
         return $output;
