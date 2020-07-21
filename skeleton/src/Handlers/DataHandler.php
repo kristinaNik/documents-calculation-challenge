@@ -15,7 +15,7 @@ class DataHandler
     {
         list($customer, $vat, $number, $type, $parent, $currency, $total) = $invoice;
 
-        $invoiceData[] = [
+        return [
             'customer' => $customer,
             'vat' => $vat,
             'number' => $number,
@@ -24,8 +24,6 @@ class DataHandler
             'currency'=>$currency,
             'total'=>$total
         ];
-
-        return $invoiceData;
     }
 
 }

@@ -80,22 +80,25 @@ class CsvImportCommand extends Command
         $currencyData = $this->currencyHandler->getCurrencies($input->getArgument('currencies'));
         $this->calculateService->setData($fileData);
         $this->calculateService->setCurrencies($currencyData);
-        $totals = $this->calculateService->getTotals($input->getOptions());
+        $calculations = $this->calculateService->getCalculationResult($input->getOption('vat'), $input->getArgument('output_currency'));
 
-        //@todo
-        $this->displayCalculatedResult($totals,$input->getArgument('output_currency'));
-
-        $io->success('Successfully calculated the sum');
+        $io->success($this->displayCalculatedResult($calculations));
 
         return 0;
     }
 
     /**
-     * @param $totals
-     * @param $outputCurrency
+     * @param $calculations
+     * @return string
      */
-    private function displayCalculatedResult($totals,$outputCurrency)
+    private function displayCalculatedResult($calculations)
     {
+        $output = '';
 
+        foreach ($calculations as $customer => $total) {
+            $output =  sprintf('%s - %d', $customer, $total);
+        }
+
+        return $output;
     }
 }

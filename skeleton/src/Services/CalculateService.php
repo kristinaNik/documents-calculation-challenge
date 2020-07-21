@@ -4,11 +4,18 @@
 namespace App\Services;
 
 
-use App\Entity\Models\Invoice;
 use App\Handlers\DataHandler;
+use App\Services\Traits\HelperTraits;
 
 class CalculateService extends DataHandler
 {
+
+    use HelperTraits;
+
+    const INVOICE_TYPE = 1;
+    const CREDIT_NOTE = 2;
+    const DEBIT_NOTE = 3;
+
 
     /**
      * @var
@@ -20,20 +27,23 @@ class CalculateService extends DataHandler
      */
     private $currencyRates = [];
 
-    private $fileData;
+    /**
+     * @var array
+     */
+    private $fileData = [];
+
 
 
     /**
-     * @param $fileData
+     * @param $csvData
      */
-    public function setData($fileData)
+    public function setData($csvData): void
     {
-        $data = [];
-        foreach ($fileData as $invoice)  {
-            $data[] = $this->prepareData($invoice);
-        }
+        foreach ($csvData as $invoice)  {
 
-        $this->fileData =  $data;
+           $this->fileData[] = $this->prepareData($invoice);
+
+        }
 
         return;
     }
@@ -42,7 +52,7 @@ class CalculateService extends DataHandler
     /**
      * @param $currencyData
      */
-   public function setCurrencies($currencyData)
+   public function setCurrencies($currencyData): void
    {
         foreach ($currencyData as $currency) {
             if ($currency->getRate() === 1) {
@@ -57,21 +67,68 @@ class CalculateService extends DataHandler
 
 
     /**
-     * @param string $totalOptions
      * @return array
      */
-   public function getTotals($totalOptions = ''): array
+   public function getCalculationResult($vat, $outputCurrency): array
    {
-        return [];
+       $result = [];
+
+       $customers = $this->findCustomerByVat($vat);
+
+       foreach ($customers as $vat => $customer) {
+           $result[$customer] = round($this->getCustomerTotal($vat, $outputCurrency));
+       }
+
+
+     return $result;
    }
 
     /**
-     * @return mixed
+     * @param $vat
+     * @param $outputCurrency
+     * @return float
      */
-    public function getDefaultCurrency()
-    {
-        return $this->defaultCurrency;
-    }
+   private function getCustomerTotal($vat, $outputCurrency): float
+   {
+       $total = 0;
+       $invoices = [];
+
+        foreach ($this->fileData as $data) {
+            if ($vat == $data['vat']) {
+
+                $invoices[] = $data;
+            }
+        }
+
+       $invoiceTotal = $this->generateTotalInvoiceByCurrency($invoices);
+
+       $total += $invoiceTotal * $this->currencyRates[$outputCurrency];
+
+       return $total;
+   }
+
+    /**
+     * @param $invoices
+     * @return float|int
+     */
+   private function generateTotalInvoiceByCurrency($invoices): float
+   {
+       $total = 0;
+       foreach ($invoices as $invoice) {
+           $ratedTotal = $invoice['total'] / $this->currencyRates[$invoice['currency']];
+
+           if ($invoice['type'] == self::CREDIT_NOTE) {
+               self::negative($ratedTotal);
+           }
+
+           $total += $ratedTotal;
+       }
+
+
+       return $total;
+   }
+
+
 
     /**
      * @param mixed $defaultCurrency
