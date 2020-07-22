@@ -11,16 +11,6 @@ class CalculateService extends DataHandler
 {
     use HelperTraits;
 
-    const INVOICE_TYPE = 1;
-    const CREDIT_NOTE = 2;
-    const DEBIT_NOTE = 3;
-
-
-    /**
-     * @var
-     */
-    private $defaultCurrency;
-
     /**
      * @var array
      */
@@ -31,20 +21,20 @@ class CalculateService extends DataHandler
      */
     private $fileData = [];
 
-
-
     /**
      * @param $csvData
+     *
+     * @throws \Exception
      */
     public function setData($csvData): void
     {
-        foreach ($csvData as $invoice)  {
-
-           $this->fileData[] = $this->prepareData($invoice);
-
+        foreach ($csvData as $invoice) {
+            $this->fileData[] = $this->prepareData($invoice);
         }
 
-        return;
+        if (!$this->checkData($this->fileData)) {
+            return;
+        };
     }
 
 
@@ -66,7 +56,11 @@ class CalculateService extends DataHandler
 
 
     /**
+     * @param $vat
+     * @param $outputCurrency
+     *
      * @return array
+     * @throws \Exception
      */
    public function getTotals($vat, $outputCurrency): array
    {
@@ -85,6 +79,8 @@ class CalculateService extends DataHandler
      * @param $vat
      * @param $outputCurrency
      * @return float
+     *
+     * @throws \Exception
      */
    private function getCustomerTotals($vat, $outputCurrency): float
    {
@@ -93,13 +89,11 @@ class CalculateService extends DataHandler
 
         foreach ($this->fileData as $data) {
             if ($vat == $data['vat']) {
-
-                $invoices[] = $data;
+                $invoices[$data['number']] = $data;
             }
         }
 
        $invoiceTotal = $this->generateTotalInvoiceByCurrency($invoices);
-
        $total += $invoiceTotal * $this->currencyRates[$outputCurrency];
 
        return $total;
@@ -107,40 +101,26 @@ class CalculateService extends DataHandler
 
     /**
      * @param $invoices
-     * @return float|int
+     * @return float
+     * @throws \Exception
      */
    private function generateTotalInvoiceByCurrency($invoices): float
    {
-       $total = 0;
-       foreach ($invoices as $invoice) {
-           $ratedTotal = $invoice['total'] / $this->currencyRates[$invoice['currency']];
+        $number = key($invoices);
+        $total = array_map(function ($invoice) use ($number) {
+            $ratedTotal = 0;
+            if ($invoice['number'] == $number) {
+                $ratedTotal = $invoice['total'] / $this->currencyRates[$invoice['currency']];
+            }
+           return $invoice['type'] == self::CREDIT_NOTE ? self::negative($ratedTotal) : $ratedTotal;
+        }, $invoices);
+        $total = array_shift($total);
 
-           if ($invoice['type'] == self::CREDIT_NOTE) {
-               self::negative($ratedTotal);
-           }
+        if ($total < 0) {
+            throw new \Exception("The total of all the credit notes is bigger than the sum of the invoice");
+        }
 
-           $total += $ratedTotal;
-       }
-
-
-       return $total;
+        return $total;
    }
 
-
-
-    /**
-     * @param mixed $defaultCurrency
-     */
-    public function setDefaultCurrency($defaultCurrency): void
-    {
-        $this->defaultCurrency = $defaultCurrency;
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getDefaultCurrency()
-    {
-        return $this->defaultCurrency;
-    }
 }

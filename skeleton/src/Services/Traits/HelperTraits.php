@@ -8,6 +8,11 @@ trait HelperTraits
 {
 
     /**
+     * @var
+     */
+    private $defaultCurrency;
+
+    /**
      * @var array
      */
     private $customers = [];
@@ -39,4 +44,20 @@ trait HelperTraits
         return $this->customers;
     }
 
+
+    /**
+     * @param mixed $defaultCurrency
+     */
+    public function setDefaultCurrency($defaultCurrency): void
+    {
+        $this->defaultCurrency = $defaultCurrency;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getDefaultCurrency()
+    {
+        return $this->defaultCurrency;
+    }
 }
